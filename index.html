@@ -88,7 +88,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 </div>
 
 <script>
-const MON=["Окт 2025","Ноя 2025","Дек 2025","Янв 2026","Фев 2026","Мар 2026","Апр 2026","Май 2026","Июн 2026","Июл 2026","Авг 2026","Сен 2026"];
+const MON=["Окт 2025","Ноя 2025","Дек 2025","Янв 2026","Фев 2026","Мар 2026","Апр 2026","Май 2026","Июн 2026","Июл 2026","Авг 2026","Сен 2026","Окт 2026"];
 const M={
 926000592:["70/13/43",3734.7592,0],926001677:["73/7/2/8",4357.4008,4990],
 928000142:["68/2/16",4210.7652,4899],928000261:["68/4/6",6514.1076,7499],928000263:["68/5/4",9639.7508,10990],928000288:["68/1/4",14569.0432,16699],928000294:["70/11/1",7252.69,0],928000295:["70/11/3",12051.18,0],928000371:["68/1/33",16760.7124,19199],928000372:["77/2/7",3585.8616,4599],928000381:["77/5/2",8687.7272,10990],928000382:["77/8/7",3032.0196,3599],928000390:["68/1/12",8470.03,9699],928000392:["68/2/5",4977.792,5699],928000393:["68/2/1",2851.5468,3299],928000394:["68/1/8",4254.7524,4899],928000401:["68/2/8",2775.9728,3199],928000402:["68/2/21",4868.3808,5599],928000412:["70/11/4",22255.122,0],928000416:["68/8/10",1673.53,2199],928000417:["68/3/8",4909.54,6999],928000437:["68/5/5",10824.07,13390],
@@ -111,14 +111,14 @@ fmt=n=>n.toLocaleString('ru-RU');
 const totalStock=R.reduce((s,r)=>s+r[5],0), total30=R.reduce((s,r)=>s+r[6],0), total12=R.reduce((s,r)=>s+r[7],0), totalYR=R.reduce((s,r)=>s+r[8],0);
 const stockPos=R.filter(r=>r[5]>0).length, zeroPos=R.length-stockPos, ovCnt=R.filter(r=>r[11]===1).length;
 const ALG=["ППП","ОП","Смеш"], ALGCLS=["ppp","op","mix"];
-const sum=R.reduce((a,r)=>r[9].map((v,i)=>v+(a[i]||0)),[]);
+const sum=R.reduce((a,r)=>r[9].map((v,i)=>v+(a[i]||0)),[]);sum.push(R.reduce((s,r)=>s+(OCT[r[0]]||0),0));
 const D=[['<b>'+fmt(totalStock)+'</b>','Остаток всего, шт',stockPos+' поз. с остатком / '+zeroPos+' пустых'],['<b>'+fmt(total30)+'</b>','Продажи за 30 дней, шт','период выгрузки'],['<b>'+fmt(total12)+'</b>','Продажи за 12 мес, шт','сравнение: год назад '+fmt(totalYR)+' ('+(totalYR?Math.round((total12-totalYR)/totalYR*100):0)+'%)'],['<b>'+R.length+'</b>','Позиций в выгрузке','категория «Сад»'],['<b>'+ovCnt+'</b>','Позиций с оверстоком','остаток есть, продажи 30 дн ≈ 0'],['<b>'+fmt(Math.round(R.reduce((s,r)=>{const m=M[r[0]];return s+(m&&m[1]?r[5]*m[1]:0)},0)))+'</b>','Остаток по закупу, руб','цены — «Изменение цен 02.09.26»']];
 D.forEach((d,i)=>{document.getElementById('kpis').insertAdjacentHTML('beforeend','<div class="kpi"><div class="v">'+d[0]+'</div><div class="t">'+d[1]+'</div><div class="s">'+d[2]+'</div></div>')});
 new Chart(chMonths,{type:'bar',data:{labels:MON,datasets:[{label:'Продажи, шт',data:sum,backgroundColor:'#1f6feb',borderRadius:4}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
 const top=[...R].sort((a,b)=>b[7]-a[7]).slice(0,10).reverse();
 new Chart(chTop,{type:'bar',data:{labels:top.map(r=>r[1].length>26?r[1].slice(0,26)+'…':r[1]),datasets:[{label:'12 мес, шт',data:top.map(r=>r[7]),backgroundColor:'#0f9d58',borderRadius:4}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true}}}});
 // фильтры по подгруппе и бренду удалены
-const A=R.map(r=>{const m=M[r[0]];const v=m?m[0]:'—';return{a:String(r[0]),n:r[1],tot:r[5],d30:r[6],m12:r[7],yr:r[8],ms:r[9],ov:r[11],alg:r[12],k:v in CN?CN[v]:null,s:v in MSK?MSK[v]:null,p:v in RF?Math.round(RF[v]*116)/100:null,v:m?m[0]:'—',z:m?m[1]:null,rz:m&&m[2]?m[2]:null}});
+const A=R.map(r=>{const m=M[r[0]];const v=m?m[0]:'—';return{a:String(r[0]),n:r[1],tot:r[5],d30:r[6],m12:r[7],yr:r[8],ms:r[9],ov:r[11],alg:r[12],oct:OCT[r[0]]==null?null:OCT[r[0]],k:v in CN?CN[v]:null,s:v in MSK?MSK[v]:null,p:v in RF?Math.round(RF[v]*116)/100:null,v:m?m[0]:'—',z:m?m[1]:null,rz:m&&m[2]?m[2]:null}});
 const pf=v=>v==null?'—':v.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2});
 const rf=v=>v?'<b>'+v.toLocaleString('ru-RU')+'</b>':'Нет МРЦ';
 const COLS=[['Артикул','a'],['Внутр артикул','v'],['Наименование','n'],['Остаток','tot'],['30 дн','d30'],['12 мес','m12'],['Год назад','yr'],['Цена по спецификации','z'],['Цена розница','rz'],['Цена РФ +16%','p'],['Остатки Китай','k'],['Остатки МСК','s'],['Оверсток','ov'],['Алгоритм','alg']];
@@ -133,15 +133,15 @@ const sk=(r,val)=>val==null?'<td class="num">—</td>':'<td class="num'+(r.k+r.s
 tb.innerHTML=v1.map(r=>{const cls=r.tot<=0?'row-zero':(r.tot<=2?'row-low':'');
 return '<tr class="'+cls+'"><td>'+r.a+'</td><td><b>'+r.v+'</b></td><td>'+r.n+'</td><td class="num"><b>'+fmt(r.tot)+'</b></td><td class="num">'+fmt(r.d30)+'</td><td class="num"><b>'+fmt(r.m12)+'</b></td><td class="num">'+(r.yr||'·')+'</td><td class="num">'+pf(r.z)+'</td><td class="num">'+rf(r.rz)+'</td><td class="num">'+pf(r.p)+'</td>'+sk(r,r.k)+sk(r,r.s)+'<td>'+(r.ov?'<span class="tag ov-yes">Да</span>':'')+'</td><td><span class="tag '+ALGCLS[r.alg]+'">'+ALG[r.alg]+'</span></td></tr>'}).join('');
 cnt.textContent='Показано: '+v1.length+' из '+A.length+' · остаток: '+v1.reduce((s,r)=>s+r.tot,0)+' шт';}
-const COLS2=[['Артикул','a'],['Внутр артикул','v'],['Наименование','n'],['Остаток','tot'],...MON.map((m,i)=>[m,'m'+i]),['12 мес','m12']];
+const COLS2=[['Артикул','a'],['Внутр артикул','v'],['Наименование','n'],['Остаток','tot'],...MON.slice(0,12).map((m,i)=>[m,'m'+i]),['Окт 2026','oct'],['12 мес','m12']];
 let sc2='m11',sd2=-1;
 const gv2=(r,k)=>{if(/^m\d+$/.test(k))return r.ms[+k.slice(1)];const x=r[k];return x==null?-1:x};
 function draw2(){const s=q2.value.toLowerCase();
 const v2=A.filter(r=>!s||r.a.includes(s)||r.v.includes(s)||r.n.toLowerCase().includes(s));
 v2.sort((a,b)=>{const x=gv2(a,sc2),y=gv2(b,sc2);return (typeof x==='string'?String(x).localeCompare(String(y),'ru'):x-y)*sd2});
-thm.innerHTML='<tr>'+COLS2.map((c,i)=>'<th'+(['tot','m12'].includes(c[1])||/^m\d+$/.test(c[1])?' class="num"':'')+' data-i="'+i+'">'+c[0]+'</th>').join('')+'</tr>';
-tbm.innerHTML='<tr class="tot"><td colspan="3"><b>ИТОГО</b></td><td class="num"><b>'+fmt(v2.reduce((s,r)=>s+r.tot,0))+'</b></td>'+MON.map((_,i)=>'<td class="num"><b>'+fmt(v2.reduce((s,r)=>s+r.ms[i],0))+'</b></td>').join('')+'<td class="num"><b>'+fmt(v2.reduce((s,r)=>s+r.m12,0))+'</b></td></tr>'
-+v2.map(r=>'<tr'+(r.tot<=0?' class="row-zero"':'')+'><td>'+r.a+'</td><td><b>'+r.v+'</b></td><td>'+r.n+'</td><td class="num">'+fmt(r.tot)+'</td>'+r.ms.map(v=>'<td class="num '+(v?'':'mzero')+'">'+(v||'·')+'</td>').join('')+'<td class="num"><b>'+fmt(r.m12)+'</b></td></tr>').join('');
+thm.innerHTML='<tr>'+COLS2.map((c,i)=>'<th'+(['tot','m12','oct'].includes(c[1])||/^m\d+$/.test(c[1])?' class="num"':'')+' data-i="'+i+'">'+c[0]+'</th>').join('')+'</tr>';
+tbm.innerHTML='<tr class="tot"><td colspan="3"><b>ИТОГО</b></td><td class="num"><b>'+fmt(v2.reduce((s,r)=>s+r.tot,0))+'</b></td>'+MON.map((_,i)=>'<td class="num"><b>'+fmt(v2.reduce((s,r)=>s+r.ms[i],0))+'</b></td>').join('')+'<td class="num"><b>'+fmt(v2.reduce((s,r)=>s+(r.oct||0),0))+'</b></td><td class="num"><b>'+fmt(v2.reduce((s,r)=>s+r.m12,0))+'</b></td></tr>'
++v2.map(r=>'<tr'+(r.tot<=0?' class="row-zero"':'')+'><td>'+r.a+'</td><td><b>'+r.v+'</b></td><td>'+r.n+'</td><td class="num">'+fmt(r.tot)+'</td>'+r.ms.map(v=>'<td class="num '+(v?'':'mzero')+'">'+(v||'·')+'</td>').join('')+'<td class="num '+(r.oct?'':'mzero')+'">'+(r.oct||'·')+'</td><td class="num"><b>'+fmt(r.m12)+'</b></td></tr>').join('');
 cnt2.textContent='Показано: '+v2.length+' из '+A.length;}
 [q,fStock,fAlg].forEach(el=>el.addEventListener('input',draw));
 q2.addEventListener('input',draw2);
@@ -249,6 +249,7 @@ const R=[
 [950001826,"Триммер 1500Вт, леска/нож, захват 25/42см, вес 5,5кг GET-1500B Huter","Триммеры","Триммеры электрические",1,1,6,66,8,[6,2,0,1,0,2,5,13,20,8,4,5],"Huter",0,1,1],
 [950001827,"Культиватор 4,0л.с., захват 43см, 1вперед, вес 24кг GMC-4.0 Huter","Культиваторы, мотоблоки","Культиваторы бензиновые",1,0,0,0,0,[0,0,0,0,0,0,0,0,0,0,0,0],"Huter",0,1,1]
 ];
+const OCT={926000592:0,926001677:null,928000142:0,928000261:null,928000263:9,928000288:2,928000294:2,928000295:null,928000371:6,928000372:0,928000381:3,928000382:1,928000390:14,928000392:13,928000393:28,928000394:2,928000401:null,928000402:null,928000412:3,928000416:null,928000417:4,928000437:22,928000482:2,946000024:1,946000025:5,946000026:null,946000027:8,946000028:0,946000029:2,946000106:0,946000107:0,946000108:0,946000159:0,946000193:15,946000194:null,946000243:null,946000244:4,946000246:null,946000247:null,946000248:1,946000249:1,946000250:2,946000251:null,946000252:null,946000253:null,946000254:11,946000255:20,946000256:15,946000257:6,946000258:0,946000259:null,946000260:1,946000261:11,950000351:null,950000352:0,950000372:null,950000392:2,950000572:4,950000581:0,950000591:3,950000592:0,950000601:0,950000652:32,950000661:18,950000722:null,950000922:5,950000931:1,950000932:2,950000951:null,950000961:null,950001034:6,950001036:9,950001080:0,950001164:null,950001166:5,950001167:5,950001220:0,950001224:0,950001228:113,950001229:71,950001230:38,950001307:6,950001364:5,950001494:12,950001505:3,950001575:5,950001770:0,950001774:1,950001776:1,950001793:null,950001795:null,950001798:null,950001799:5,950001826:3,950001827:null};
 init();
 </script>
 </body>
