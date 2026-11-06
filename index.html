@@ -40,7 +40,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .mzero{color:#c9ced6}
 .legend{display:flex;gap:14px;font-size:12px;color:var(--mut);margin:4px 0 10px}
 .cnt{color:var(--mut);font-size:12px}
-.tabs{display:flex;gap:8px;margin:2px 0 14px}.tb{padding:8px 20px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:14px;cursor:pointer;color:var(--ink)}.tb.active{background:var(--acc);border-color:var(--acc);color:#fff}tr.tot td{background:#eef2f8}.row-ours td{background:#fff3bf}.pct{display:block;font-size:10.5px;color:var(--mut)}
+.tabs{display:flex;gap:8px;margin:2px 0 14px}.tb{padding:8px 20px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:14px;cursor:pointer;color:var(--ink)}.tb.active{background:var(--acc);border-color:var(--acc);color:#fff}tr.tot td{background:#eef2f8}.row-ours td{background:#fff3bf}.pct{display:block;font-size:10.5px;color:var(--mut)}#tblS{font-size:11.5px}#tblS th,#tblS td{padding:3px 5px;border-right:1px solid #e8ecf3}#tblS thead th{vertical-align:bottom}#tblS .pct{font-size:9.5px}.vh{writing-mode:vertical-rl;transform:rotate(180deg);display:inline-block;white-space:nowrap;font-size:10.5px}.zp{font-size:11.5px}td.top-sh{background:#dff1e2!important}
 </style>
 </head>
 <body>
@@ -90,7 +90,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 <div id="p3" style="display:none">
 <div class="card" style="max-width:100%"><h2>Группа «Электроинструмент» — доля полки по брендам</h2><div class="sub">количество позиций/фасовок бренда на полке по подгруппам (под числом — доля бренда в подгруппе, %) · исходник: «Электроинструмент1/2» · 25 брендов, 349 позиций</div></div>
 <div class="twrap"><table id="tblS"><thead id="thS"></thead><tbody id="tbS"></tbody></table></div>
-<div class="legend"><span><span style="display:inline-block;width:14px;height:12px;background:#fff3bf;border:1px solid #e6d96a;border-radius:3px;vertical-align:middle"></span> наши бренды — Ресанта, Вихрь</span><span>· — бренда нет в подгруппе</span></div>
+<div class="legend"><span><span style="display:inline-block;width:14px;height:12px;background:#fff3bf;border:1px solid #e6d96a;border-radius:3px;vertical-align:middle"></span> наши бренды — Ресанта, Вихрь</span><span><span style="display:inline-block;width:14px;height:12px;background:#dff1e2;border:1px solid #9fd3ab;border-radius:3px;vertical-align:middle"></span> лидер подгруппы</span><span>· — бренда нет в подгруппе</span><span>шапки подгрупп читаются снизу вверх</span></div>
 </div>
 </div>
 
@@ -115,8 +115,9 @@ function drawS(){
  const rest=names.filter(b=>!SHELF_OURS.includes(b)).sort((a,b)=>tot[names.indexOf(b)]-tot[names.indexOf(a)]);
  const order=[...SHELF_OURS.filter(b=>names.includes(b)),...rest];
  const pc=(v,c)=>c?(v/c*100).toFixed(1).replace('.',',')+'%':'';
- document.getElementById('thS').innerHTML='<tr><th>Бренд</th>'+SHELF_SUBS.map(s=>'<th>'+s+'</th>').join('')+'<th>Итого</th></tr>';
- document.getElementById('tbS').innerHTML=order.map(b=>{const i=names.indexOf(b),r=SHELF[b];return '<tr'+(SHELF_OURS.includes(b)?' class="row-ours"':'')+'><td>'+(SHELF_OURS.includes(b)?'<b>'+b+'</b>':b)+'</td>'+r.map((v,j)=>'<td class="num">'+(v?'<b>'+v+'</b><span class="pct">'+pc(v,ctot[j])+'</span>':'<span class="mzero">·</span>')+'</td>').join('')+'<td class="num"><b>'+tot[i]+'</b><span class="pct">'+pc(tot[i],grand)+'</span></td></tr>'}).join('')
+ const cmax=SHELF_SUBS.map((_,j)=>names.reduce((m,b)=>Math.max(m,SHELF[b][j]),0));
+ document.getElementById('thS').innerHTML='<tr><th>Бренд</th>'+SHELF_SUBS.map(s=>'<th class="num"><span class="vh">'+s+'</span></th>').join('')+'<th>Итого</th></tr>';
+ document.getElementById('tbS').innerHTML=order.map(b=>{const i=names.indexOf(b),r=SHELF[b];return '<tr'+(SHELF_OURS.includes(b)?' class="row-ours"':'')+'><td>'+(SHELF_OURS.includes(b)?'<b>'+b+'</b>':b)+'</td>'+r.map((v,j)=>'<td class="num'+(v&&v===cmax[j]?' top-sh':'')+'">'+(v?'<b>'+v+'</b><span class="pct">'+pc(v,ctot[j])+'</span>':'<span class="mzero">·</span>')+'</td>').join('')+'<td class="num"><b>'+tot[i]+'</b><span class="pct">'+pc(tot[i],grand)+'</span></td></tr>'}).join('')
  +'<tr class="tot"><td><b>ИТОГО</b></td>'+ctot.map(t=>'<td class="num"><b>'+t+'</b></td>').join('')+'<td class="num"><b>'+grand+'</b></td></tr>';
 }
 function init(){
@@ -133,18 +134,19 @@ new Chart(chTop,{type:'bar',data:{labels:top.map(r=>r[1].length>26?r[1].slice(0,
 // фильтры по подгруппе и бренду удалены
 const A=R.map(r=>{const m=M[r[0]];const v=m?m[0]:'—';return{a:String(r[0]),n:r[1],tot:r[5],d30:r[6],m12:r[7],yr:r[8],ms:r[9],ov:r[11],alg:r[12],oct:OCT[r[0]]==null?null:OCT[r[0]],k:v in CN?CN[v]:null,s:v in MSK?MSK[v]:null,p:v in RF?Math.round(RF[v]*116)/100:null,v:m?m[0]:'—',z:m?m[1]:null,rz:m&&m[2]?m[2]:null}});
 const pf=v=>v==null?'—':v.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2});
+const zf=v=>v==null?'—':v.toFixed(2).replace('.',',');
 const rf=v=>v?'<b>'+v.toLocaleString('ru-RU')+'</b>':'Нет МРЦ';
-const COLS=[['Артикул','a'],['Внутр артикул','v'],['Наименование','n'],['Остаток','tot'],['30 дн','d30'],['12 мес','m12'],['Год назад','yr'],['Цена по спецификации','z'],['Цена розница','rz'],['Цена РФ +16%','p'],['Остатки Китай','k'],['Остатки МСК','s'],['Оверсток','ov'],['Алгоритм','alg']];
+const COLS=[['Артикул','a'],['Внутр артикул','v'],['Наименование','n'],['Остаток','tot'],['30 дн','d30'],['12 мес','m12'],['Цена по спецификации','z'],['Цена розница','rz'],['Цена РФ +16%','p'],['Остатки Китай','k'],['Остатки МСК','s']];
 let sc='m12',sd=-1,v1=[];
 function draw(){const s=q.value.toLowerCase(),fst=fStock.value,fa=fAlg.value;
 v1=A.filter(r=>{if(s&&!(r.a.includes(s)||r.v.includes(s)||r.n.toLowerCase().includes(s)))return false;
 if(fst==='stock'&&r.tot<=0)return false;if(fst==='zero'&&r.tot>0)return false;if(fst==='low'&&r.tot>2)return false;if(fst==='ov'&&!r.ov)return false;
 if(fa!==''&&r.alg!==+fa)return false;return true});
 v1.sort((a,b)=>{const x=a[sc]==null?-1:a[sc],y=b[sc]==null?-1:b[sc];return (typeof x==='string'?String(x).localeCompare(String(y),'ru'):x-y)*sd});
-th.innerHTML='<tr>'+COLS.map((c,i)=>'<th'+(['tot','d30','m12','yr','z','rz','p','k','s'].includes(c[1])?' class="num"':'')+' data-i="'+i+'">'+c[0]+'</th>').join('')+'</tr>';
+th.innerHTML='<tr>'+COLS.map((c,i)=>'<th'+(['tot','d30','m12','z','rz','p','k','s'].includes(c[1])?' class="num'+(c[1]==='z'?' zp':'')+'"':'')+' data-i="'+i+'">'+c[0]+'</th>').join('')+'</tr>';
 const sk=(r,val)=>val==null?'<td class="num">—</td>':'<td class="num'+(r.k+r.s<10?' stk-low':'')+'"><b>'+val+'</b></td>';
 tb.innerHTML=v1.map(r=>{const cls=r.tot<=0?'row-zero':(r.tot<=2?'row-low':'');
-return '<tr class="'+cls+'"><td>'+r.a+'</td><td><b>'+r.v+'</b></td><td>'+r.n+'</td><td class="num"><b>'+fmt(r.tot)+'</b></td><td class="num">'+fmt(r.d30)+'</td><td class="num"><b>'+fmt(r.m12)+'</b></td><td class="num">'+(r.yr||'·')+'</td><td class="num">'+pf(r.z)+'</td><td class="num">'+rf(r.rz)+'</td><td class="num">'+pf(r.p)+'</td>'+sk(r,r.k)+sk(r,r.s)+'<td>'+(r.ov?'<span class="tag ov-yes">Да</span>':'')+'</td><td><span class="tag '+ALGCLS[r.alg]+'">'+ALG[r.alg]+'</span></td></tr>'}).join('');
+return '<tr class="'+cls+'"><td>'+r.a+'</td><td><b>'+r.v+'</b></td><td>'+r.n+'</td><td class="num"><b>'+fmt(r.tot)+'</b></td><td class="num">'+fmt(r.d30)+'</td><td class="num"><b>'+fmt(r.m12)+'</b></td><td class="num zp">'+zf(r.z)+'</td><td class="num">'+rf(r.rz)+'</td><td class="num">'+pf(r.p)+'</td>'+sk(r,r.k)+sk(r,r.s)+'</tr>'}).join('');
 cnt.textContent='Показано: '+v1.length+' из '+A.length+' · остаток: '+v1.reduce((s,r)=>s+r.tot,0)+' шт';}
 const COLS2=[['Артикул','a'],['Внутр артикул','v'],['Наименование','n'],['Остаток','tot'],...MON.slice(0,12).map((m,i)=>[m,'m'+i]),['Окт 2026','oct'],['12 мес','m12']];
 let sc2='m11',sd2=-1;
