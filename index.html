@@ -97,12 +97,13 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 
 <div id="p4" style="display:none">
 <div class="bar">
- <button class="obtn" id="btnOrder">Заказ на пополнение</button>
+ <button class="obtn" id="btnOrder">Сформировать</button>
  <button class="obtn" id="btnXlsx" style="background:#0f9d58;border-color:#0f9d58">Скачать таблицу</button>
  <select id="fOrd"><option value="need">Только к заказу</option><option value="all">Весь ассортимент</option></select>
  <span class="cnt" id="cntO"></span>
+ <span class="cnt" id="ordStamp"></span>
 </div>
-<div class="legend"><span>база плана: продажи Ноя 2025 + 20% (округление вверх)</span><span>если продаж не было — план 1 шт</span><span>к заказу = план − (Остатки Китай + Остатки МСК), только если положительный</span></div>
+<div class="legend"><span>база плана: продажи <b id="baseM"></b> + 20% (округление вверх)</span><span>если продаж не было — план 1 шт</span><span>к заказу = план − (Остатки Китай + Остатки МСК), только если положительный</span><span>месяц базы берётся автоматически из текущей даты: формируете в декабре — план от Дек 2025</span></div>
 <div class="twrap"><table id="tblO"><thead id="thO"></thead><tbody id="tbO"></tbody></table></div>
 </div>
 </div>
@@ -187,42 +188,36 @@ th.addEventListener('click',e=>{const t=e.target.closest('th');if(!t)return;cons
 thm.addEventListener('click',e=>{const t=e.target.closest('th');if(!t)return;const k=COLS2[+t.dataset.i][1];if(sc2===k)sd2*=-1;else{sc2=k;sd2=-1}draw2()});
 document.querySelectorAll('.tb').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tb').forEach(x=>x.classList.toggle('active',x===b));['p1','p2','p3','p4'].forEach(id=>document.getElementById(id).style.display=id===b.dataset.t?'':'none');});
 draw();draw2();drawS();
-const NI=MON.indexOf('Ноя 2025');
-const ORD=R.map(r=>{const m=M[r[0]],v=m?m[0]:'—';const nov=(r[9]&&r[9][NI])||0;const need=nov>0?Math.ceil(nov*1.2):1;const k=v in CN?CN[v]:0,s=v in MSK?MSK[v]:0,st=k+s;return{a:String(r[0]),v:v,n:r[1],nov:nov,need:need,k:k,s:s,st:st,ord:need>st?need-st:0}});
-let ordRows=[];
+const NOW=new Date(),MONTHS=['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+const CURM=NOW.getMonth(),CURY=NOW.getFullYear(),BASE_LABEL=MONTHS[CURM]+' '+(CURY-1);
+const NI=MON.indexOf(BASE_LABEL);
+let ORD=[], ordRows=[];
+function buildORD(){ORD=R.map(r=>{const m=M[r[0]],v=m?m[0]:'—';const nov=NI>=0&&r[9]?(r[9][NI]||0):0;const need=nov>0?Math.ceil(nov*1.2):1;const k=v in CN?CN[v]:0,s=v in MSK?MSK[v]:0,st=k+s;return{a:String(r[0]),v:v,n:r[1],nov:nov,need:need,k:k,s:s,st:st,ord:need>st?need-st:0}});}
 function drawO(){
  const vO=fOrd.value==='all'?ORD.slice().sort((a,b)=>b.ord-a.ord||b.need-a.need):ORD.filter(r=>r.ord>0).sort((a,b)=>b.ord-a.ord||b.need-a.need);
  ordRows=vO;
- document.getElementById('thO').innerHTML='<tr><th>Артикул</th><th>Внутр</th><th>Наименование</th><th class="num">Ноя 2025</th><th class="num">План +20%</th><th class="num">Китай</th><th class="num">МСК</th><th class="num">Остаток</th><th class="num">К заказу</th></tr>';
+ document.getElementById('thO').innerHTML='<tr><th>Артикул</th><th>Внутр</th><th>Наименование</th><th class="num">'+BASE_LABEL+'</th><th class="num">План +20%</th><th class="num">Китай</th><th class="num">МСК</th><th class="num">Остаток</th><th class="num">К заказу</th></tr>';
+ document.getElementById('baseM').textContent=NI>=0?BASE_LABEL:BASE_LABEL+' — нет данных, план 1 шт';
  document.getElementById('tbO').innerHTML=vO.map(r=>'<tr><td>'+r.a+'</td><td><b>'+r.v+'</b></td><td>'+r.n+'</td><td class="num">'+r.nov+'</td><td class="num"><b>'+r.need+'</b></td><td class="num">'+r.k+'</td><td class="num">'+r.s+'</td><td class="num">'+r.st+'</td><td class="num'+(r.ord?' ord-yes':'')+'">'+(r.ord?'<b>'+r.ord+'</b>':'—')+'</td></tr>').join('');
  document.getElementById('cntO').textContent='К заказу: '+ORD.filter(r=>r.ord>0).length+' поз. · '+ORD.reduce((s,r)=>s+r.ord,0)+' шт · показано: '+vO.length+(fOrd.value==='all'?' из '+ORD.length:'');
 }
-function makeOrder(){
- const rows=ORD.filter(r=>r.ord>0).sort((a,b)=>b.ord-a.ord);
- if(!rows.length){alert('Запасы покрывают план по всем позициям — заказ не требуется.');return;}
- const csv='Артикул;Внутр артикул;Наименование;Продажи Ноя 2025;План +20%;Остаток Китай;Остаток МСК;К заказу'
-  +rows.map(r=>'\n'+r.a+';'+r.v+';"'+r.n.replace(/"/g,'""')+'";'+r.nov+';'+r.need+';'+r.k+';'+r.s+';'+r.ord).join('')
-  +'\nИТОГО;;;;;;'+rows.reduce((s,r)=>s+r.ord,0);
- const blob=new Blob([String.fromCharCode(0xFEFF)+csv],{type:'text/csv;charset=utf-8'});
- const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='заказ_на_пополнение_ноябрь_2026.csv';document.body.appendChild(a);a.click();a.remove();
-}
-btnOrder.addEventListener('click',makeOrder);
+btnOrder.addEventListener('click',()=>{buildORD();drawO();document.getElementById('ordStamp').textContent=' · заказ сформирован: '+new Date().toLocaleString('ru-RU');});
 function makeOrderXlsx(){
  if(typeof XLSX==='undefined'){alert('Не удалось загрузить библиотеку Excel — проверьте интернет и обновите страницу.');return;}
  const rows=ordRows;
  if(!rows.length){alert('Нет строк для выгрузки (выбран режим «Только к заказу», а заказов нет).');return;}
- const wsData=[['Артикул','Внутр артикул','Наименование','Продажи Ноя 2025','План +20%','Остаток Китай','Остаток МСК','Остаток всего','К заказу']];
+ const wsData=[['Артикул','Внутр артикул','Наименование','Продажи '+BASE_LABEL,'План +20%','Остаток Китай','Остаток МСК','Остаток всего','К заказу']];
  rows.forEach(r=>wsData.push([r.a,r.v,r.n,r.nov,r.need,r.k,r.s,r.st,r.ord]));
  const sumOrd=rows.reduce((s,r)=>s+r.ord,0);
  wsData.push(['ИТОГО','','','','','','','',sumOrd]);
  const ws=XLSX.utils.aoa_to_sheet(wsData);
  ws['!cols']=[{wch:12},{wch:11},{wch:62},{wch:14},{wch:10},{wch:13},{wch:12},{wch:12},{wch:10}];
  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Заказ');
- XLSX.writeFile(wb,'заказ_на_пополнение_ноябрь_2026.xlsx');
+ XLSX.writeFile(wb,'заказ_на_пополнение_'+MONTHS[CURM]+'_'+CURY+'.xlsx');
 }
 btnXlsx.addEventListener('click',makeOrderXlsx);
 fOrd.addEventListener('input',drawO);
-drawO();
+buildORD();drawO();
 }
 </script>
 <script>
