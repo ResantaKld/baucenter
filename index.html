@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Бауцентр — Сад: остатки и продажи</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{--bg:#f2f5f9;--card:#fff;--ink:#16283e;--mut:#68788f;--acc:#1f6feb;--grn:#0f9d58;--red:#d93025;--org:#e8890c;--line:#dfe6ef}
 *{box-sizing:border-box}
@@ -40,7 +41,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .mzero{color:#c9ced6}
 .legend{display:flex;gap:14px;font-size:12px;color:var(--mut);margin:4px 0 10px}
 .cnt{color:var(--mut);font-size:12px}
-.tabs{display:flex;gap:8px;margin:2px 0 14px}.tb{padding:8px 20px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:14px;cursor:pointer;color:var(--ink)}.tb.active{background:var(--acc);border-color:var(--acc);color:#fff}tr.tot td{background:#eef2f8}.row-ours td{background:#fff3bf}.pct{display:block;font-size:10.5px;color:var(--mut)}.shelf{font-size:11.5px}.shelf th,.shelf td{padding:3px 5px;border-right:1px solid #e8ecf3}.shelf thead th{vertical-align:bottom}.shelf .pct{font-size:9.5px}.vh{writing-mode:vertical-rl;transform:rotate(180deg);display:inline-block;white-space:nowrap;font-size:10.5px}.zp{font-size:11.5px}td.top-sh{background:#dff1e2!important}
+.tabs{display:flex;gap:10px;margin:2px 0 16px;flex-wrap:wrap}.tb{padding:12px 26px;border:1px solid #1b2b47;border-radius:12px;background:#22324d;font-size:16px;font-weight:600;cursor:pointer;color:#fff;letter-spacing:.2px}.tb:hover{background:#2c3f63}.tb.active{background:#1f6feb;border-color:#1f6feb;color:#fff;box-shadow:0 2px 6px rgba(31,111,235,.35)}tr.tot td{background:#eef2f8}.row-ours td{background:#fff3bf}.pct{display:block;font-size:10.5px;color:var(--mut)}.shelf{font-size:11.5px}.shelf th,.shelf td{padding:3px 5px;border-right:1px solid #e8ecf3}.shelf thead th{vertical-align:bottom}.shelf .pct{font-size:9.5px}.vh{writing-mode:vertical-rl;transform:rotate(180deg);display:inline-block;white-space:nowrap;font-size:10.5px}.zp{font-size:11.5px}td.top-sh{background:#dff1e2!important}.ord-yes{color:#0d7a3e}.obtn{padding:8px 20px;border:1px solid #1f6feb;border-radius:10px;background:#1f6feb;color:#fff;font-size:14px;cursor:pointer}.obtn:hover{background:#1a5fd0}
 </style>
 </head>
 <body>
@@ -52,6 +53,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
  <button class="tb active" data-t="p1">Обзор</button>
  <button class="tb" data-t="p2">Продажи по месяцам</button>
  <button class="tb" data-t="p3">Полка-доля</button>
+ <button class="tb" data-t="p4">Заказ остатки</button>
 </div>
 
 <div id="p1">
@@ -91,6 +93,17 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 <div class="card" style="max-width:100%"><h2>Полка-доля по группам: Электроинструмент · Насосы · Оборудование</h2><div class="sub">количество позиций/фасовок бренда на полке по подгруппам (под числом — доля бренда в подгруппе, %) · исходники: «Электроинструмент1/2», «Насосы (3)», «оборудование» · 58 брендов, 610 позиций</div></div>
 <div id="shelfWrap"></div>
 <div class="legend"><span><span style="display:inline-block;width:14px;height:12px;background:#fff3bf;border:1px solid #e6d96a;border-radius:3px;vertical-align:middle"></span> наши бренды — Ресанта, Вихрь</span><span><span style="display:inline-block;width:14px;height:12px;background:#dff1e2;border:1px solid #9fd3ab;border-radius:3px;vertical-align:middle"></span> лидер подгруппы</span><span>· — бренда нет в подгруппе</span><span>шапки подгрупп читаются снизу вверх</span></div>
+</div>
+
+<div id="p4" style="display:none">
+<div class="bar">
+ <button class="obtn" id="btnOrder">Заказ на пополнение</button>
+ <button class="obtn" id="btnXlsx" style="background:#0f9d58;border-color:#0f9d58">Скачать таблицу</button>
+ <select id="fOrd"><option value="need">Только к заказу</option><option value="all">Весь ассортимент</option></select>
+ <span class="cnt" id="cntO"></span>
+</div>
+<div class="legend"><span>база плана: продажи Ноя 2025 + 20% (округление вверх)</span><span>если продаж не было — план 1 шт</span><span>к заказу = план − (Остатки Китай + Остатки МСК), только если положительный</span></div>
+<div class="twrap"><table id="tblO"><thead id="thO"></thead><tbody id="tbO"></tbody></table></div>
 </div>
 </div>
 
@@ -172,8 +185,44 @@ cnt2.textContent='Показано: '+v2.length+' из '+A.length;}
 q2.addEventListener('input',draw2);
 th.addEventListener('click',e=>{const t=e.target.closest('th');if(!t)return;const k=COLS[+t.dataset.i][1];if(sc===k)sd*=-1;else{sc=k;sd=-1}draw()});
 thm.addEventListener('click',e=>{const t=e.target.closest('th');if(!t)return;const k=COLS2[+t.dataset.i][1];if(sc2===k)sd2*=-1;else{sc2=k;sd2=-1}draw2()});
-document.querySelectorAll('.tb').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tb').forEach(x=>x.classList.toggle('active',x===b));['p1','p2','p3'].forEach(id=>document.getElementById(id).style.display=id===b.dataset.t?'':'none');});
+document.querySelectorAll('.tb').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tb').forEach(x=>x.classList.toggle('active',x===b));['p1','p2','p3','p4'].forEach(id=>document.getElementById(id).style.display=id===b.dataset.t?'':'none');});
 draw();draw2();drawS();
+const NI=MON.indexOf('Ноя 2025');
+const ORD=R.map(r=>{const m=M[r[0]],v=m?m[0]:'—';const nov=(r[9]&&r[9][NI])||0;const need=nov>0?Math.ceil(nov*1.2):1;const k=v in CN?CN[v]:0,s=v in MSK?MSK[v]:0,st=k+s;return{a:String(r[0]),v:v,n:r[1],nov:nov,need:need,k:k,s:s,st:st,ord:need>st?need-st:0}});
+let ordRows=[];
+function drawO(){
+ const vO=fOrd.value==='all'?ORD.slice().sort((a,b)=>b.ord-a.ord||b.need-a.need):ORD.filter(r=>r.ord>0).sort((a,b)=>b.ord-a.ord||b.need-a.need);
+ ordRows=vO;
+ document.getElementById('thO').innerHTML='<tr><th>Артикул</th><th>Внутр</th><th>Наименование</th><th class="num">Ноя 2025</th><th class="num">План +20%</th><th class="num">Китай</th><th class="num">МСК</th><th class="num">Остаток</th><th class="num">К заказу</th></tr>';
+ document.getElementById('tbO').innerHTML=vO.map(r=>'<tr><td>'+r.a+'</td><td><b>'+r.v+'</b></td><td>'+r.n+'</td><td class="num">'+r.nov+'</td><td class="num"><b>'+r.need+'</b></td><td class="num">'+r.k+'</td><td class="num">'+r.s+'</td><td class="num">'+r.st+'</td><td class="num'+(r.ord?' ord-yes':'')+'">'+(r.ord?'<b>'+r.ord+'</b>':'—')+'</td></tr>').join('');
+ document.getElementById('cntO').textContent='К заказу: '+ORD.filter(r=>r.ord>0).length+' поз. · '+ORD.reduce((s,r)=>s+r.ord,0)+' шт · показано: '+vO.length+(fOrd.value==='all'?' из '+ORD.length:'');
+}
+function makeOrder(){
+ const rows=ORD.filter(r=>r.ord>0).sort((a,b)=>b.ord-a.ord);
+ if(!rows.length){alert('Запасы покрывают план по всем позициям — заказ не требуется.');return;}
+ const csv='Артикул;Внутр артикул;Наименование;Продажи Ноя 2025;План +20%;Остаток Китай;Остаток МСК;К заказу'
+  +rows.map(r=>'\n'+r.a+';'+r.v+';"'+r.n.replace(/"/g,'""')+'";'+r.nov+';'+r.need+';'+r.k+';'+r.s+';'+r.ord).join('')
+  +'\nИТОГО;;;;;;'+rows.reduce((s,r)=>s+r.ord,0);
+ const blob=new Blob([String.fromCharCode(0xFEFF)+csv],{type:'text/csv;charset=utf-8'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='заказ_на_пополнение_ноябрь_2026.csv';document.body.appendChild(a);a.click();a.remove();
+}
+btnOrder.addEventListener('click',makeOrder);
+function makeOrderXlsx(){
+ if(typeof XLSX==='undefined'){alert('Не удалось загрузить библиотеку Excel — проверьте интернет и обновите страницу.');return;}
+ const rows=ordRows;
+ if(!rows.length){alert('Нет строк для выгрузки (выбран режим «Только к заказу», а заказов нет).');return;}
+ const wsData=[['Артикул','Внутр артикул','Наименование','Продажи Ноя 2025','План +20%','Остаток Китай','Остаток МСК','Остаток всего','К заказу']];
+ rows.forEach(r=>wsData.push([r.a,r.v,r.n,r.nov,r.need,r.k,r.s,r.st,r.ord]));
+ const sumOrd=rows.reduce((s,r)=>s+r.ord,0);
+ wsData.push(['ИТОГО','','','','','','','',sumOrd]);
+ const ws=XLSX.utils.aoa_to_sheet(wsData);
+ ws['!cols']=[{wch:12},{wch:11},{wch:62},{wch:14},{wch:10},{wch:13},{wch:12},{wch:12},{wch:10}];
+ const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Заказ');
+ XLSX.writeFile(wb,'заказ_на_пополнение_ноябрь_2026.xlsx');
+}
+btnXlsx.addEventListener('click',makeOrderXlsx);
+fOrd.addEventListener('input',drawO);
+drawO();
 }
 </script>
 <script>
