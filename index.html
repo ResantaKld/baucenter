@@ -6,6 +6,7 @@
 <title>Бауцентр — Сад: остатки и продажи</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <style>
 :root{--bg:#f2f5f9;--card:#fff;--ink:#16283e;--mut:#68788f;--acc:#1f6feb;--grn:#0f9d58;--red:#d93025;--org:#e8890c;--line:#dfe6ef}
 *{box-sizing:border-box}
@@ -74,9 +75,10 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
   <option value="ov">Только оверсток</option>
  </select>
  <select id="fAlg"><option value="">Все алгоритмы</option><option value="0">ППП</option><option value="1">ОП</option><option value="2">Смешанный</option></select>
+ <button class="obtn" id="btnXlsR" style="background:#0f9d58;border-color:#0f9d58">Скачать таблицу</button>
  <span class="cnt" id="cnt"></span>
 </div>
-<div class="legend"><span><span class="tag ppp">ППП</span> постоянные поставки</span><span><span class="tag op">ОП</span> однократная поставка</span><span><span class="tag mix">Смешанный</span></span><span><span class="tag ov-yes">Оверсток</span></span><span>красная строка — нет в наличии</span><span>жёлтая — остаток ≤ 2</span><span>тёмно-красные ячейки — сумма двух складов меньше 10</span></div>
+<div class="legend"><span><span class="tag ppp">ППП</span> постоянные поставки</span><span><span class="tag op">ОП</span> однократная поставка</span><span><span class="tag mix">Смешанный</span></span><span><span class="tag ov-yes">Оверсток</span></span><span>красная строка — нет в наличии</span><span>жёлтая — остаток ≤ 2</span><span>тёмно-красные ячейки — сумма двух складов меньше 10</span><span>экспорт сохраняет эти же цвета</span></div>
 
 <div class="twrap"><table id="tbl"><thead id="th"></thead><tbody id="tb"></tbody></table></div>
 </div>
@@ -215,6 +217,26 @@ function makeOrderXlsx(){
  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Заказ');
  XLSX.writeFile(wb,'заказ_на_пополнение_'+MONTHS[CURM]+'_'+CURY+'.xlsx');
 }
+function makeRevXlsx(){
+ if(typeof ExcelJS==='undefined'){alert('Не удалось загрузить библиотеку Excel — проверьте интернет и обновите страницу.');return;}
+ if(!v1.length){alert('Нет строк для выгрузки — сбросьте фильтры.');return;}
+ const wb=new ExcelJS.Workbook(), ws=wb.addWorksheet('Обзор');
+ const heads=COLS.map(c=>c[0]);
+ const hdr=ws.addRow(heads);
+ hdr.eachCell((c,i)=>{c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF22324D'}};c.alignment={horizontal:i>=4?'right':'left',vertical:'middle'};});
+ v1.forEach(r=>{
+  const row=ws.addRow([r.a,r.v,r.n,r.tot,r.d30,r.m12,r.z,r.rz,r.p,r.k==null?'—':r.k,r.s==null?'—':r.s]);
+  const base=r.tot<=0?'FFFDE3E3':(r.tot<=2?'FFFFF8E6':null);
+  if(base)row.eachCell(c=>{c.fill={type:'pattern',pattern:'solid',fgColor:{argb:base}}});
+  [10,11].forEach((ci,idx)=>{const val=idx?r.s:r.k;if(val!=null&&r.k+r.s<10){const c=row.getCell(ci);c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF8B0000'}};c.font={bold:true,color:{argb:'FFFFFFFF'}};}});
+  [7,8,9].forEach(ci=>{row.getCell(ci).numFmt='#,##0.00';});
+ });
+ [12,11,62,10,8,9,13,12,12,13,11].forEach((w,i)=>{ws.getColumn(i+1).width=w;});
+ ws.views=[{state:'frozen',ySplit:1}];
+ const dd=new Date(),p2=x=>String(x).padStart(2,'0');
+ wb.xlsx.writeBuffer().then(b=>{const blob=new Blob([b],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='остатки_обзор_сад_'+p2(dd.getDate())+'.'+p2(dd.getMonth()+1)+'.'+dd.getFullYear()+'.xlsx';a.click();URL.revokeObjectURL(a.href);});
+}
+btnXlsR.addEventListener('click',makeRevXlsx);
 btnXlsx.addEventListener('click',makeOrderXlsx);
 fOrd.addEventListener('input',drawO);
 buildORD();drawO();
