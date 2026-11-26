@@ -44,6 +44,19 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .cnt{color:var(--mut);font-size:12px}
 .tabs{display:flex;gap:10px;margin:2px 0 16px;flex-wrap:wrap}.tb{padding:12px 26px;border:1px solid #1b2b47;border-radius:12px;background:#22324d;font-size:16px;font-weight:600;cursor:pointer;color:#fff;letter-spacing:.2px}.tb:hover{background:#2c3f63}.tb.active{background:#1f6feb;border-color:#1f6feb;color:#fff;box-shadow:0 2px 6px rgba(31,111,235,.35)}tr.tot td{background:#eef2f8}.row-ours td{background:#fff3bf}.pct{display:block;font-size:10.5px;color:var(--mut)}.shelf{font-size:11.5px}.shelf th,.shelf td{padding:3px 5px;border-right:1px solid #e8ecf3}.shelf thead th{vertical-align:bottom}.shelf .pct{font-size:9.5px}.vh{writing-mode:vertical-rl;transform:rotate(180deg);display:inline-block;white-space:nowrap;font-size:10.5px}.zp{font-size:11.5px}td.top-sh{background:#dff1e2!important}.ord-yes{color:#0d7a3e}.obtn{padding:8px 20px;border:1px solid #1f6feb;border-radius:10px;background:#1f6feb;color:#fff;font-size:14px;cursor:pointer}.obtn:hover{background:#1a5fd0}
 
+.smap{margin:6px 0 2px}
+.srow{display:flex;align-items:center;gap:10px;padding:3px 0;font-size:12px}
+.sname{flex:0 0 200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sbar{flex:1;height:14px;background:#e9eef5;border-radius:7px;overflow:hidden}
+.sfill{height:100%;background:#0f9d58;border-radius:7px}
+.sfill-weak{background:#e8890c}
+.sval{flex:0 0 175px;text-align:right;font-variant-numeric:tabular-nums;color:var(--mut);white-space:nowrap}
+.snone{color:#d93025;font-weight:600}
+.sg{margin-bottom:10px;padding-bottom:8px;border-bottom:1px dashed var(--line)}
+.sg h3{font-size:14px;margin:10px 0 4px}
+.gsum{font-size:11.5px;color:var(--mut);margin:0 0 8px}
+.smiss{margin:8px 0 14px;padding:10px 12px;border:1px solid #f3c2c2;background:#fdf1f1;border-radius:10px;font-size:12px}
+.schip{display:inline-block;padding:1px 8px;margin:3px 4px 0 0;border-radius:20px;background:#fde3e3;color:#b02a37;font-size:11px;font-weight:500}
 /* --- адаптивность под телефоны --- */
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 button,select,input,table{font-family:inherit}
@@ -76,6 +89,9 @@ table td:first-child{position:sticky;left:0;background:#fff;z-index:1;box-shadow
 .row-ours td:first-child{background:#fff3bf}
 tr.tot td:first-child{background:#eef2f8}
 td.top-sh{background:#dff1e2!important}
+.srow{gap:6px}
+.sname{flex:0 0 118px;font-size:11px}
+.sval{flex:0 0 auto;font-size:10.5px}
 }
 </style>
 </head>
@@ -127,6 +143,7 @@ td.top-sh{background:#dff1e2!important}
 
 <div id="p3" style="display:none">
 <div class="card" style="max-width:100%"><h2>Полка-доля по группам: Электроинструмент · Насосы · Оборудование</h2><div class="sub">количество позиций/фасовок бренда на полке по подгруппам (под числом — доля бренда в подгруппе, %) · исходники: «Электроинструмент1/2», «Насосы (3)», «оборудование» · 58 брендов, 610 позиций</div></div>
+<div class="card" style="max-width:100%"><h2>Схема представленности: Ресанта · Вихрь</h2><div class="sub">каждая строка — подгруппа полки: полоса — доля наших позиций в ней · сортировка от лучших к пустым · серые строки — нас нет на полке</div><div id="shelfMap"></div></div>
 <div id="shelfWrap"></div>
 <div class="legend"><span><span style="display:inline-block;width:14px;height:12px;background:#fff3bf;border:1px solid #e6d96a;border-radius:3px;vertical-align:middle"></span> наши бренды — Ресанта, Вихрь</span><span><span style="display:inline-block;width:14px;height:12px;background:#dff1e2;border:1px solid #9fd3ab;border-radius:3px;vertical-align:middle"></span> лидер подгруппы</span><span>· — бренда нет в подгруппе</span><span>шапки подгрупп читаются снизу вверх</span></div>
 </div>
@@ -163,6 +180,28 @@ const SH_P={'Ресанта':[1,0,0,0,0,0,1,0,0],'Вихрь':[0,0,2,0,3,1,2,0,0
 const SH_E_SUBS=["Бензорезы","Бетономешалки","Виброплиты","Водонагреватели","Зернодробилки","Компрессоры","Мойки"];
 const SH_E={'Ресанта':[0,0,0,0,0,0,0],'Вихрь':[0,0,0,0,1,0,0],'Champion':[1,0,4,0,0,0,0],'Профмаш':[0,4,0,0,0,0,0],'Энтузиаст':[0,1,0,0,0,0,0],'MTX':[0,0,0,0,0,2,1],'Fubag':[0,0,0,0,0,5,0],'Foxweld':[0,0,0,0,0,6,0],'Daewoo':[0,0,0,0,0,3,5],'Krons':[0,0,0,0,0,0,0],'Dorn':[0,0,0,0,0,0,4],'Hanskonner':[0,0,0,0,0,0,1],'Ariston':[0,0,0,26,0,0,0],'Ballu':[0,0,0,5,0,0,0],'Electrolux':[0,0,0,2,0,0,0],'Haier':[0,0,0,19,0,0,0],'Thermex':[0,0,0,44,0,0,0],'Oasis':[0,0,0,1,0,0,0],'Royal Thermo':[0,0,0,2,0,0,0]};
 const SHELF_G={'Электроинструмент':{subs:SHELF_SUBS,d:SHELF},'Насосы':{subs:SH_P_SUBS,d:SH_P},'Оборудование':{subs:SH_E_SUBS,d:SH_E}};
+function drawSheme(){
+ const ours=SHELF_OURS;
+ const fp=v=>v.toFixed(1).replace('.',',')+'%';
+ let ghtml='',allMiss=[];
+ for(const [g,G] of Object.entries(SHELF_G)){
+  const names=Object.keys(G.d);
+  const ctot=G.subs.map((_,i)=>names.reduce((s,b)=>s+G.d[b][i],0));
+  const grand=ctot.reduce((a,b)=>a+b,0);
+  const oursTot=ours.reduce((s,b)=>s+(G.d[b]?G.d[b].reduce((a,v)=>a+v,0):0),0);
+  const rows=G.subs.map((s,i)=>({s:s,c:ctot[i],o:ours.reduce((sum,b)=>sum+(G.d[b]?G.d[b][i]:0),0)}))
+   .sort((a,b)=>(b.o/(b.c||1))-(a.o/(a.c||1))||b.c-a.c);
+  const miss=rows.filter(r=>r.o===0&&r.c>0);
+  allMiss=allMiss.concat(miss.map(r=>r.s+' · '+g));
+  ghtml+='<div class="sg"><h3>'+g+'</h3><div class="gsum">наши позиции: <b>'+oursTot+'</b> из '+grand+' ('+fp(oursTot/grand*100)+') · не представлены в '+miss.length+' из '+rows.length+' подгрупп</div>'
+   +rows.map(r=>{const p=r.c?r.o/r.c*100:0;
+    return '<div class="srow"><div class="sname" title="'+r.s+'">'+r.s+'</div><div class="sbar">'+(r.o?'<div class="sfill'+(p<10?' sfill-weak':'')+'" style="width:'+p+'%"></div>':'')+'</div><div class="sval">'+(r.c?(r.o?'<b>'+r.o+'</b> из '+r.c+' · '+fp(p):'<span class="snone">0% — нет на полке</span>'):'—')+'</div></div>'}).join('')
+   +'</div>';
+ }
+ const totalSubs=Object.values(SHELF_G).reduce((s,G)=>s+G.subs.length,0);
+ const html='<div class="smiss"><b>Не представлены в '+allMiss.length+' из '+totalSubs+' подгрупп:</b><div class="schips">'+allMiss.map(s=>'<span class="schip">'+s+'</span>').join('')+'</div></div>'+ghtml;
+ document.getElementById('shelfMap').innerHTML=html;
+}
 function drawS(){
  const pc=(v,c)=>c?(v/c*100).toFixed(1).replace('.',',')+'%':'';
  let html='';
@@ -223,7 +262,7 @@ q2.addEventListener('input',draw2);
 th.addEventListener('click',e=>{const t=e.target.closest('th');if(!t)return;const k=COLS[+t.dataset.i][1];if(sc===k)sd*=-1;else{sc=k;sd=-1}draw()});
 thm.addEventListener('click',e=>{const t=e.target.closest('th');if(!t)return;const k=COLS2[+t.dataset.i][1];if(sc2===k)sd2*=-1;else{sc2=k;sd2=-1}draw2()});
 document.querySelectorAll('.tb').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tb').forEach(x=>x.classList.toggle('active',x===b));['p1','p2','p3','p4'].forEach(id=>document.getElementById(id).style.display=id===b.dataset.t?'':'none');});
-draw();draw2();drawS();
+draw();draw2();drawS();drawSheme();
 const NOW=new Date(),MONTHS=['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
 const CURM=NOW.getMonth(),CURY=NOW.getFullYear(),BASE_LABEL=MONTHS[CURM]+' '+(CURY-1);
 const NI=MON.indexOf(BASE_LABEL);
